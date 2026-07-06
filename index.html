@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emergency Medical ID</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  :root{
+    --ink:#12283A;
+    --ink-soft:#4A5B69;
+    --red:#C42B1C;
+    --red-dark:#9E1F13;
+    --bg:#EDF1F4;
+    --card:#FFFFFF;
+    --line:#D4DCE2;
+    --green:#1B7F4B;
+    --mono:'IBM Plex Mono',monospace;
+    --body:'IBM Plex Sans',system-ui,sans-serif;
+    --disp:'Barlow Condensed',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{background:var(--bg);color:var(--ink);font-family:var(--body);min-height:100vh}
+  .wrap{max-width:520px;margin:0 auto;padding:0 16px 48px}
+
+  header{
+    background:var(--ink);color:#fff;padding:14px 16px;
+    display:flex;align-items:center;gap:10px;
+    border-bottom:4px solid var(--red);
+  }
+  header .cross{
+    width:28px;height:28px;background:var(--red);border-radius:6px;flex:none;
+    display:grid;place-items:center;font-weight:700;color:#fff;font-size:18px;line-height:1;
+  }
+  header h1{font-family:var(--disp);font-weight:600;font-size:22px;letter-spacing:.06em;text-transform:uppercase}
+  header .sub{font-size:11px;color:#B7C4CE;letter-spacing:.04em}
+
+  h2.section{
+    font-family:var(--disp);font-weight:600;font-size:20px;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--ink);margin:24px 0 12px;
+    display:flex;align-items:center;gap:10px;
+  }
+  h2.section::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:14px}
+
+  label{display:block;font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);margin:14px 0 6px}
+  label:first-child{margin-top:0}
+  input,select,textarea{
+    width:100%;font-family:var(--body);font-size:16px;color:var(--ink);
+    background:#F7F9FA;border:1px solid var(--line);border-radius:8px;padding:12px;
+  }
+  textarea{min-height:76px;resize:vertical}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--ink);outline-offset:1px;background:#fff}
+  .row{display:flex;gap:10px}
+  .row>div{flex:1}
+
+  .btn{
+    display:block;width:100%;border:none;border-radius:10px;padding:15px;
+    font-family:var(--disp);font-weight:600;font-size:19px;letter-spacing:.08em;text-transform:uppercase;
+    cursor:pointer;text-align:center;text-decoration:none;color:inherit;
+  }
+  .btn-red{background:var(--red);color:#fff}
+  .btn-red:active{background:var(--red-dark)}
+  .btn-ink{background:var(--ink);color:#fff}
+  .btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+  .btn+.btn{margin-top:10px}
+  .err{color:var(--red);font-size:13px;margin-top:10px;display:none}
+
+  .rec-item{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:14px;margin-bottom:10px;cursor:pointer;
+  }
+  .rec-item .nm{font-weight:600}
+  .rec-item .id{font-family:var(--mono);font-size:12px;color:var(--ink-soft)}
+  .rec-item .bg-tag{
+    font-family:var(--disp);font-weight:700;font-size:18px;color:var(--red);
+    border:1.5px solid var(--red);border-radius:6px;padding:2px 8px;flex:none;
+  }
+  .empty{color:var(--ink-soft);font-size:14px;text-align:center;padding:24px 0}
+
+  .idcard{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(18,40,58,.10);margin-top:20px}
+  .idcard .band{
+    background:var(--red);color:#fff;padding:14px 18px;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+  }
+  .idcard .band .t{font-family:var(--disp);font-weight:700;font-size:21px;letter-spacing:.1em;text-transform:uppercase}
+  .idcard .band .fid{font-family:var(--mono);font-size:12px;opacity:.95}
+  .idcard .hole{width:34px;height:10px;background:var(--bg);border-radius:99px;margin:12px auto 0;box-shadow:inset 0 1px 3px rgba(0,0,0,.25)}
+  .idcard .main{padding:8px 18px 18px}
+  .person{display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:4px}
+  .person .name{font-family:var(--disp);font-weight:700;font-size:30px;line-height:1.05;text-transform:uppercase}
+  .person .blood{font-family:var(--disp);font-weight:700;font-size:34px;color:var(--red);flex:none}
+  .person .blood small{display:block;font-family:var(--body);font-weight:600;font-size:9px;letter-spacing:.1em;color:var(--ink-soft);text-transform:uppercase;text-align:right}
+  .field{padding:12px 0;border-bottom:1px dashed var(--line)}
+  .field:last-child{border-bottom:none}
+  .field .k{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:3px}
+  .field .v{font-size:15px;line-height:1.45;white-space:pre-wrap}
+  .callrow{display:flex;align-items:center;gap:10px;background:#FBF2F1;border:1px solid #EBD2CF;border-radius:10px;padding:12px;margin-top:6px}
+  .callrow .info{flex:1;min-width:0}
+  .callrow .num{font-family:var(--mono);font-weight:600;font-size:16px}
+  .callbtn{
+    flex:none;background:var(--green);color:#fff;text-decoration:none;border-radius:10px;
+    padding:12px 16px;font-family:var(--disp);font-weight:700;font-size:18px;letter-spacing:.06em;
+    display:flex;align-items:center;gap:7px;
+  }
+  .callbtn:active{background:#14663B}
+
+  .qrbox{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;text-align:center;margin-top:16px}
+  .qrbox .qr{display:inline-block;padding:10px;border:2px solid var(--ink);border-radius:10px;margin:12px 0}
+  .qrbox .qr img{display:block;width:220px;height:220px;image-rendering:pixelated}
+  .fid-big{font-family:var(--mono);font-weight:600;font-size:17px;background:var(--ink);color:#fff;border-radius:8px;padding:8px 14px;display:inline-block;letter-spacing:.06em}
+  .hint{font-size:13px;color:var(--ink-soft);line-height:1.5;margin-top:12px}
+  .linkbox{
+    font-family:var(--mono);font-size:12px;word-break:break-all;background:#F7F9FA;
+    border:1px dashed var(--line);border-radius:8px;padding:10px;margin-top:12px;
+    text-align:left;color:var(--ink-soft);max-height:88px;overflow:auto;
+  }
+  .back{background:none;border:none;color:var(--ink-soft);font-size:13px;font-weight:600;cursor:pointer;padding:14px 0 0;letter-spacing:.03em}
+  .screen{display:none}
+  .screen.active{display:block;animation:fade .18s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.screen.active{animation:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="cross">+</div>
+  <div>
+    <h1>Emergency Medical ID</h1>
+    <div class="sub">Scan or tap a link to view a record</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- HOME -->
+  <div class="screen" id="scr-home">
+    <h2 class="section">New Record</h2>
+    <button class="btn btn-red" onclick="show('scr-form')">+ Create Medical ID</button>
+
+    <h2 class="section">Records Saved on This Device</h2>
+    <div id="rec-list"><div class="empty">No records yet. Create the first one above.</div></div>
+  </div>
+
+  <!-- FORM -->
+  <div class="screen" id="scr-form">
+    <h2 class="section">Patient Details</h2>
+    <div class="card">
+      <label for="f-name">Full name *</label>
+      <input id="f-name" autocomplete="off">
+      <div class="row">
+        <div>
+          <label for="f-age">Age *</label>
+          <input id="f-age" type="number" min="0" max="130" inputmode="numeric">
+        </div>
+        <div>
+          <label for="f-blood">Blood group *</label>
+          <select id="f-blood">
+            <option value="">Select</option>
+            <option>A+</option><option>A−</option><option>B+</option><option>B−</option>
+            <option>AB+</option><option>AB−</option><option>O+</option><option>O−</option>
+          </select>
+        </div>
+      </div>
+      <label for="f-cname">Emergency contact name</label>
+      <input id="f-cname" autocomplete="off">
+      <label for="f-phone">Emergency phone number *</label>
+      <input id="f-phone" type="tel" inputmode="tel" placeholder="+91 98765 43210">
+      <label for="f-allergies">Allergies</label>
+      <textarea id="f-allergies" placeholder="e.g. Penicillin, peanuts. Write NONE if none."></textarea>
+      <label for="f-history">Medical history</label>
+      <textarea id="f-history" placeholder="e.g. Type 2 diabetes, asthma"></textarea>
+      <label for="f-surgeries">Surgeries</label>
+      <textarea id="f-surgeries" placeholder="e.g. Appendectomy (2019)"></textarea>
+      <div class="err" id="form-err">Please fill name, age, blood group and phone number.</div>
+    </div>
+    <button class="btn btn-red" onclick="saveRecord()">Save &amp; Generate QR + Link</button>
+    <button class="back" onclick="show('scr-home')">← Back</button>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="screen" id="scr-success">
+    <div class="qrbox">
+      <h2 class="section" style="justify-content:center">Record Created</h2>
+      <div class="fid-big" id="s-fid">MED-000000</div>
+      <div class="qr"><div id="s-qr"></div></div>
+      <div class="hint">Scanning this QR opens the record page directly, with a one-tap call button. Print it, save a screenshot, or keep it in a wallet.</div>
+      <div class="linkbox" id="s-link"></div>
+      <button class="btn btn-ghost" id="s-copy" style="margin-top:12px">Copy Link</button>
+    </div>
+    <div style="margin-top:14px">
+      <a class="btn btn-ink" id="s-open" href="#" target="_blank" rel="noopener">Open Record Page</a>
+      <button class="btn btn-ghost" onclick="show('scr-home');renderList()">Done</button>
+    </div>
+  </div>
+
+  <!-- RECORD VIEW -->
+  <div class="screen" id="scr-view">
+    <div class="idcard" id="view-card"></div>
+    <button class="back" id="view-back">← Create your own Medical ID</button>
+  </div>
+
+</div>
+
+<script>
+const LS_KEY='medid-records';
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function genId(){
+  const chars='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let s='';
+  for(let i=0;i<6;i++) s+=chars[Math.floor(Math.random()*chars.length)];
+  return 'MED-'+s;
+}
+
+function esc(t){const d=document.createElement('div');d.textContent=t||'';return d.innerHTML;}
+
+/* Encode/decode record <-> URL hash (unicode-safe base64) */
+function encodeRec(rec){
+  const json=JSON.stringify(rec);
+  return btoa(String.fromCharCode(...new TextEncoder().encode(json)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function decodeRec(hash){
+  let b64=hash.replace(/-/g,'+').replace(/_/g,'/');
+  while(b64.length%4) b64+='=';
+  const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+function baseUrl(){
+  return location.origin+location.pathname;
+}
+
+/* ---------- Save ---------- */
+function saveRecord(){
+  const name=document.getElementById('f-name').value.trim();
+  const age=document.getElementById('f-age').value.trim();
+  const blood=document.getElementById('f-blood').value;
+  const phone=document.getElementById('f-phone').value.trim();
+  const err=document.getElementById('form-err');
+
+  if(!name||!age||!blood||!phone){err.style.display='block';return;}
+  err.style.display='none';
+
+  const rec={
+    id:genId(), name, age, blood, phone,
+    contactName:document.getElementById('f-cname').value.trim(),
+    allergies:document.getElementById('f-allergies').value.trim(),
+    history:document.getElementById('f-history').value.trim(),
+    surgeries:document.getElementById('f-surgeries').value.trim(),
+    created:new Date().toISOString()
+  };
+
+  // save to this device's local registry
+  try{
+    const all=JSON.parse(localStorage.getItem(LS_KEY)||'[]');
+    all.unshift(rec);
+    localStorage.setItem(LS_KEY,JSON.stringify(all));
+  }catch(e){}
+
+  ['f-name','f-age','f-phone','f-cname','f-allergies','f-history','f-surgeries'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('f-blood').value='';
+
+  showSuccess(rec);
+}
+
+/* ---------- Success + QR ---------- */
+function showSuccess(rec){
+  const link=baseUrl()+'#'+encodeRec(rec);
+
+  document.getElementById('s-fid').textContent=rec.id;
+  document.getElementById('s-link').textContent=link;
+  document.getElementById('s-open').href=link;
+
+  const qr=qrcode(0,'L');
+  qr.addData(link);
+  qr.make();
+  document.getElementById('s-qr').innerHTML=qr.createImgTag(3,0);
+
+  const copyBtn=document.getElementById('s-copy');
+  copyBtn.onclick=async()=>{
+    try{
+      await navigator.clipboard.writeText(link);
+      copyBtn.textContent='Copied ✓';
+      setTimeout(()=>copyBtn.textContent='Copy Link',1500);
+    }catch(e){
+      copyBtn.textContent='Long-press the link above to copy';
+    }
+  };
+
+  show('scr-success');
+}
+
+/* ---------- Record view ---------- */
+function renderView(rec){
+  const card=document.getElementById('view-card');
+  card.innerHTML=`
+    <div class="band">
+      <span class="t">Emergency Medical ID</span>
+      <span class="fid">${esc(rec.id)}</span>
+    </div>
+    <div class="hole"></div>
+    <div class="main">
+      <div class="person">
+        <div class="name">${esc(rec.name)}</div>
+        <div class="blood"><small>Blood group</small>${esc(rec.blood)}</div>
+      </div>
+      <div class="field"><div class="k">Age</div><div class="v">${esc(rec.age)} years</div></div>
+      <div class="field"><div class="k">Allergies</div><div class="v">${esc(rec.allergies)||'—'}</div></div>
+      <div class="field"><div class="k">Medical history</div><div class="v">${esc(rec.history)||'—'}</div></div>
+      <div class="field"><div class="k">Surgeries</div><div class="v">${esc(rec.surgeries)||'—'}</div></div>
+      <div class="field">
+        <div class="k">Emergency contact</div>
+        <div class="callrow">
+          <div class="info">
+            ${rec.contactName?('<div class="v">'+esc(rec.contactName)+'</div>'):''}
+            <div class="num">${esc(rec.phone)}</div>
+          </div>
+          <a class="callbtn" href="tel:${encodeURIComponent(rec.phone.replace(/[^+\d]/g,''))}">📞 CALL</a>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('view-back').onclick=()=>{
+    history.replaceState(null,'',baseUrl());
+    show('scr-home');renderList();
+  };
+  show('scr-view');
+}
+
+/* ---------- Device record list ---------- */
+function renderList(){
+  const list=document.getElementById('rec-list');
+  let all=[];
+  try{all=JSON.parse(localStorage.getItem(LS_KEY)||'[]');}catch(e){}
+  if(!all.length){list.innerHTML='<div class="empty">No records yet. Create the first one above.</div>';return;}
+  list.innerHTML=all.map((rec,i)=>`
+    <div class="rec-item" data-i="${i}">
+      <div><div class="nm">${esc(rec.name)}</div><div class="id">${esc(rec.id)}</div></div>
+      <div class="bg-tag">${esc(rec.blood)}</div>
+    </div>`).join('');
+  list.querySelectorAll('.rec-item').forEach(el=>{
+    el.onclick=()=>showSuccess(all[+el.dataset.i]);
+  });
+}
+
+/* ---------- Router: link with data opens the record directly ---------- */
+(function init(){
+  const hash=location.hash.slice(1);
+  if(hash){
+    try{
+      renderView(decodeRec(hash));
+      return;
+    }catch(e){/* bad link, fall through to home */}
+  }
+  show('scr-home');
+  renderList();
+})();
+</script>
+</body>
+</html>
