@@ -92,7 +92,7 @@
   .idcard .band .fid{font-family:var(--mono);font-size:12px;opacity:.95}
   .idcard .hole{width:34px;height:10px;background:var(--bg);border-radius:99px;margin:12px auto 0;box-shadow:inset 0 1px 3px rgba(0,0,0,.25)}
   .idcard .main{padding:8px 18px 18px}
-  .person{display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:4px}
+  .person{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:4px}
   .person .name{font-family:var(--disp);font-weight:700;font-size:30px;line-height:1.05;text-transform:uppercase}
   .person .blood{font-family:var(--disp);font-weight:700;font-size:34px;color:var(--red);flex:none}
   .person .blood small{display:block;font-family:var(--body);font-weight:600;font-size:9px;letter-spacing:.1em;color:var(--ink-soft);text-transform:uppercase;text-align:right}
@@ -109,6 +109,12 @@
     display:flex;align-items:center;gap:7px;
   }
   .callbtn:active{background:#14663B}
+  input[type=file]{padding:10px;font-size:14px}
+  .prev{display:none;width:96px;height:96px;object-fit:cover;border-radius:8px;border:1.5px solid var(--line);margin-top:8px}
+  .prev.wide{width:100%;height:auto;max-height:180px;object-fit:contain;background:#F7F9FA}
+  .photonote{font-size:12px;color:var(--ink-soft);line-height:1.45;margin-top:6px}
+  .idphoto{width:66px;height:66px;object-fit:cover;border-radius:8px;border:2px solid var(--ink);flex:none}
+  .govimg{width:100%;border-radius:8px;border:1px solid var(--line);margin-top:4px}
 
   .qrbox{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;text-align:center;margin-top:16px}
   .qrbox .qr{display:inline-block;padding:10px;border:2px solid var(--ink);border-radius:10px;margin:12px 0}
@@ -172,6 +178,13 @@
       <input id="f-cname" autocomplete="off">
       <label for="f-phone">Emergency phone number *</label>
       <input id="f-phone" type="tel" inputmode="tel" placeholder="+91 98765 43210">
+      <label for="f-photo">Photo of self</label>
+      <input id="f-photo" type="file" accept="image/*">
+      <img id="prev-photo" class="prev" alt="Photo preview">
+      <label for="f-govid">Government ID (optional)</label>
+      <input id="f-govid" type="file" accept="image/*">
+      <img id="prev-govid" class="prev wide" alt="ID preview">
+      <div class="photonote">⚠ Photos are embedded in the record's link — anyone with the link can see them. Only add a government ID if you're comfortable with that.</div>
       <label for="f-allergies">Allergies</label>
       <textarea id="f-allergies" placeholder="e.g. Penicillin, peanuts. Write NONE if none."></textarea>
       <label for="f-history">Medical history</label>
@@ -191,6 +204,7 @@
       <div class="fid-big" id="s-fid">MED-000000</div>
       <div class="qr"><div id="s-qr"></div></div>
       <div class="hint">Scanning this QR opens the record page directly, with a one-tap call button. Print it, save a screenshot, or keep it in a wallet.</div>
+      <div class="hint" id="s-qrnote" style="display:none;color:var(--red)"></div>
       <div class="linkbox" id="s-link"></div>
       <button class="btn btn-ghost" id="s-copy" style="margin-top:12px">Copy Link</button>
     </div>
@@ -242,6 +256,54 @@ function baseUrl(){
   return location.origin+location.pathname;
 }
 
+/* ---------- Photos ---------- */
+let photoData='', govIdData='';
+
+function compressImage(file,maxW,quality){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const scale=Math.min(1,maxW/img.width);
+      const c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(img.width*scale));
+      c.height=Math.max(1,Math.round(img.height*scale));
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(img.src);
+      resolve(c.toDataURL('image/jpeg',quality));
+    };
+    img.onerror=()=>{URL.revokeObjectURL(img.src);reject(new Error('bad image'));};
+    img.src=URL.createObjectURL(file);
+  });
+}
+
+function safeImg(src){
+  return (typeof src==='string'&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(src))?src:'';
+}
+
+document.getElementById('f-photo').addEventListener('change',async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    photoData=await compressImage(f,240,0.55);
+    const p=document.getElementById('prev-photo');
+    p.src=photoData; p.style.display='block';
+  }catch(err){photoData='';}
+});
+
+document.getElementById('f-govid').addEventListener('change',async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    govIdData=await compressImage(f,560,0.55);
+    const p=document.getElementById('prev-govid');
+    p.src=govIdData; p.style.display='block';
+  }catch(err){govIdData='';}
+});
+
+function clearPhotos(){
+  photoData=''; govIdData='';
+  ['f-photo','f-govid'].forEach(i=>document.getElementById(i).value='');
+  ['prev-photo','prev-govid'].forEach(i=>{const p=document.getElementById(i);p.style.display='none';p.removeAttribute('src');});
+}
+
 /* ---------- Save ---------- */
 function saveRecord(){
   const name=document.getElementById('f-name').value.trim();
@@ -259,6 +321,8 @@ function saveRecord(){
     allergies:document.getElementById('f-allergies').value.trim(),
     history:document.getElementById('f-history').value.trim(),
     surgeries:document.getElementById('f-surgeries').value.trim(),
+    photo:photoData||'',
+    govId:govIdData||'',
     created:new Date().toISOString()
   };
 
@@ -271,6 +335,7 @@ function saveRecord(){
 
   ['f-name','f-age','f-phone','f-cname','f-allergies','f-history','f-surgeries'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('f-blood').value='';
+  clearPhotos();
 
   showSuccess(rec);
 }
@@ -283,10 +348,24 @@ function showSuccess(rec){
   document.getElementById('s-link').textContent=link;
   document.getElementById('s-open').href=link;
 
-  const qr=qrcode(0,'L');
-  qr.addData(link);
-  qr.make();
-  document.getElementById('s-qr').innerHTML=qr.createImgTag(3,0);
+  let qrNote='';
+  try{
+    const qr=qrcode(0,'L');
+    qr.addData(link);
+    qr.make();
+    document.getElementById('s-qr').innerHTML=qr.createImgTag(3,0);
+  }catch(e){
+    // Record too large for a QR (photos). Encode a photo-free version instead.
+    const lite={...rec}; delete lite.photo; delete lite.govId;
+    const liteLink=baseUrl()+'#'+encodeRec(lite);
+    const qr=qrcode(0,'L');
+    qr.addData(liteLink);
+    qr.make();
+    document.getElementById('s-qr').innerHTML=qr.createImgTag(3,0);
+    qrNote='Note: photos are too large to fit inside a QR code, so scanning the QR opens the record without photos. The full link (below) includes the photos — use it for NFC tags, WhatsApp, or lock-screen shortcuts.';
+  }
+  document.getElementById('s-qrnote').textContent=qrNote;
+  document.getElementById('s-qrnote').style.display=qrNote?'block':'none';
 
   const copyBtn=document.getElementById('s-copy');
   copyBtn.onclick=async()=>{
@@ -313,10 +392,12 @@ function renderView(rec){
     <div class="hole"></div>
     <div class="main">
       <div class="person">
-        <div class="name">${esc(rec.name)}</div>
+        ${safeImg(rec.photo)?('<img class="idphoto" src="'+safeImg(rec.photo)+'" alt="Photo">'):''}
+        <div class="name" style="flex:1">${esc(rec.name)}</div>
         <div class="blood"><small>Blood group</small>${esc(rec.blood)}</div>
       </div>
       <div class="field"><div class="k">Age</div><div class="v">${esc(rec.age)} years</div></div>
+      ${safeImg(rec.govId)?('<div class="field"><div class="k">Government ID</div><img class="govimg" src="'+safeImg(rec.govId)+'" alt="Government ID"></div>'):''}
       <div class="field"><div class="k">Allergies</div><div class="v">${esc(rec.allergies)||'—'}</div></div>
       <div class="field"><div class="k">Medical history</div><div class="v">${esc(rec.history)||'—'}</div></div>
       <div class="field"><div class="k">Surgeries</div><div class="v">${esc(rec.surgeries)||'—'}</div></div>
